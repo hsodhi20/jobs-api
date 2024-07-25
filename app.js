@@ -1,7 +1,11 @@
 require("dotenv").config();
 require("express-async-errors");
 
-// extra security packages
+const express = require("express");
+const cookieParser = require("cookie-parser"); // Import cookie-parser
+const app = express();
+
+// Other imports and middleware
 const helmet = require("helmet");
 const cors = require("cors");
 const xss = require("xss-clean");
@@ -12,18 +16,12 @@ const swaggerUI = require("swagger-ui-express");
 const YAML = require("yamljs");
 const swaggerDocument = YAML.load("./swagger.yaml");
 
-const express = require("express");
-const app = express();
-
 const connectDB = require("./db/connect");
 const authenticateUser = require("./middleware/authentication");
-// routers
-const authRouter = require("./routes/auth");
-const jobsRouter = require("./routes/jobs");
-// error handler
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
 
+// Middleware
 app.set("trust proxy", 1);
 app.use(
   rateLimiter({
@@ -32,6 +30,7 @@ app.use(
   })
 );
 app.use(express.json());
+app.use(cookieParser()); // Use cookie-parser
 app.use(helmet());
 app.use(cors());
 app.use(xss());
@@ -41,10 +40,11 @@ app.get("/", (req, res) => {
 });
 app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
-// routes
-app.use("/api/v1/auth", authRouter);
-app.use("/api/v1/jobs", authenticateUser, jobsRouter);
+// Routes
+app.use("/api/v1/auth", require("./routes/auth"));
+app.use("/api/v1/jobs", authenticateUser, require("./routes/jobs"));
 
+// Error handlers
 app.use(notFoundMiddleware);
 app.use(errorHandlerMiddleware);
 
